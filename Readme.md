@@ -1,0 +1,3 @@
+# Leaning from Chai aur Backend Series by Hitesh Sir
+
+-[Model link](https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbDBzUGx2OWxieHhrdkN4YzkzRUJaemFxYmNTZ3xBQ3Jtc0tteDNmSGJyZ2hqYnFKYTJCX2YtcTBOOW92cEdxWkRZNVNPR1R5czJHd1hFOERuWGx6Y2Q1aTJ4TVJVVHd0QmtiZE9pdlNFZnFabk9mU3ZEbl90RkdMVnZGTlEwLUV4WUVodDVZRnVXNVJKMVJ5VjRXRQ&q=https%3A%2F%2Fapp.eraser.io%2Fworkspace%2FYtPqZ1VogxGy1jzIDkzj%3Forigin%3Dshare&v=9B4CvtzXRpc)
