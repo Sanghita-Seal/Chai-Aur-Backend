@@ -16,13 +16,21 @@ import connectDB from "./db/index.js";
     "dev": "nodemon -r dotenv/config --experimental-json-module src/index.js"
   },*/
 connectDB()
-
-
-
-
-
-
-
+.then(()=>{
+    app.on("error",(error)=>{
+            console.log("Error: ", error);
+            throw error
+            
+        })
+    app.listen(process.env.PORT||8000,()=>{
+        console.log(`Server is listening on port : ${process.env.PORT}`);
+        
+    })
+})
+.catch((error)=>{
+    console.log("MongoDB connection error: ", error);
+    
+})
 
 
 
