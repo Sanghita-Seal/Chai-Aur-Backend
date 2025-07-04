@@ -18,4 +18,14 @@ app.use(express.static("public"))//for making a static folder that don't change
 app.use(cookieParser())//for using line no. 3
 
 
+//routes import
+import userRouter from "./routes/user.routes.js"
+
+//routes declaration
+app.use("/api/v1/users", userRouter) //standard practice
+//app.use("/users", userRouter) easy one
+
+//http://localhost:8000/api/v1/users/register
+
+
 export {app}

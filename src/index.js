@@ -1,6 +1,8 @@
 //As early as possible in your application, import and configure dotenv:
 //require('dotenv').config({path:'./env'})
 import dotenv from "dotenv";
+import connectDB from "./db/index.js";
+import { app } from "./app.js";
 dotenv.config({
     path:'./.env'
     //path:'./env' without the . before env
@@ -9,21 +11,25 @@ dotenv.config({
 //better approach: take a separate file , write all code there and 
 // just import that in the index file
 
-import connectDB from "./db/index.js";
 
 /*in package.json
 "scripts": {
     "dev": "nodemon -r dotenv/config --experimental-json-module src/index.js"
   },*/
+//   connectDB()
+// .then(() => {
+//     app.listen(process.env.PORT || 8000, () => {
+//         console.log(`⚙️ Server is running at port : ${process.env.PORT}`);
+//     })
+// })
+// .catch((err) => {
+//     console.log("MONGO db connection failed !!! ", err);
+// })
+
 connectDB()
 .then(()=>{
-    app.on("error",(error)=>{
-            console.log("Error: ", error);
-            throw error
-            
-        })
     app.listen(process.env.PORT||8000,()=>{
-        console.log(`Server is listening on port : ${process.env.PORT}`);
+        console.log(`⚙️Server is listening on port : ${process.env.PORT}`);
         
     })
 })
