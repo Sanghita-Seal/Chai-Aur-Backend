@@ -1,6 +1,7 @@
-import mongoose, {schema} from "mongoose"
+import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcrypt"
+const { Schema } = mongoose; 
 
 const userSchema= new Schema(
     {
@@ -58,7 +59,7 @@ userSchema.pre("save", async function(next){
     //will be encrypted and saved when that is modified
     //not for the modification of any other fields
 
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
