@@ -11,7 +11,7 @@ class ApiError extends Error{
         this.data= null, // this file is for api error....not for api response
         this.message=message,
         this.success=false,
-        this.errors=errors
+        this.error=error
 
         //this if else block is not necessary..but used in production
         if(stack){

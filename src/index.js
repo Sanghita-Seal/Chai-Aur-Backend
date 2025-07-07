@@ -1,13 +1,14 @@
 //As early as possible in your application, import and configure dotenv:
 //require('dotenv').config({path:'./env'})
 import dotenv from "dotenv";
-import connectDB from "./db/index.js";
-import { app } from "./app.js";//bhule gechilam import korte
 dotenv.config({
     path:'./.env'
     //path:'./env' without the . before env
     //  it will throw mongoDB parser error
 })
+import connectDB from "./db/index.js";
+import { app } from "./app.js";//bhule gechilam import korte
+
 //better approach: take a separate file , write all code there and 
 // just import that in the index file
 
@@ -28,6 +29,8 @@ connectDB()
     console.log("MongoDB connection error: ", error);
     
 })
+console.log("CLOUDINARY_CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME);
+
 
 
 

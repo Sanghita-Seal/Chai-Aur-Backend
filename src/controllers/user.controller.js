@@ -11,6 +11,8 @@ const registerUser= asyncHandler( async (req, res)=>{
 } )
 */
 const registerUser= asyncHandler( async (req, res)=>{
+    console.log("BODY:", req.body);
+  console.log("FILES:", req.files);
     /* Steps:
     1. Get user details from frontend(or Postman)
     2. Validate that fields are not empty
@@ -34,21 +36,31 @@ const registerUser= asyncHandler( async (req, res)=>{
     }
 
     //Check if user already exists using username and email
-    const existedUser= User.findOne({
+    const existedUser= await User.findOne({
         $or: [{username},{email}]
     })
     if(existedUser){
         throw new ApiError(409, "User with user or email already exist")
     }
     //4. Check for uploaded images, including avatar
-    const avatarLocalPath=req.files?.avatar[0]?.path;
-    const coverImageLocalPath =req.files?.coverImage[0].path;
-    if(!avatarLocalPath){
-        throw new ApiError(400, "Avatar file is required")
+    const avatarLocalPath = req.files?.avatar?.[0]?.path?.replace(/\\/g, "/");
+    //const coverImageLocalPath = req.files?.coverImage?.[0]?.path?.replace(/\\/g, "/");
+
+    let coverImageLocalPath;   
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length>0){
+        coverImageLocalPath=req.files.coverImage[0].path
+    } 
+
+    console.log("DEBUG avatarLocalPath:", avatarLocalPath);
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required");
     }
+
 
     //5. Upload avatar and images to Cloudinary && check avatar again
     const avatar =await uploadOnCloudinary(avatarLocalPath)
+    console.log("Cloudinary upload result:", avatar);
     const coverImage =await uploadOnCloudinary(coverImageLocalPath)
     if(!avatar){
                 throw new ApiError(400, "Avatar file is required")
