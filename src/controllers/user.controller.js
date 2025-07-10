@@ -373,6 +373,94 @@ const updateUserCoverImage= asyncHandler(async(req, res)=>{
     )
 })
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const { username } = req.params;
+
+    // Check if username is missing or just whitespace
+    if (!username?.trim()) {
+        throw new ApiError(400, "Username is missing");
+    }
+
+    const channel = await User.aggregate([
+        // 1️⃣ Match the channel by username
+        {
+            $match: {
+                username: username.toLowerCase(), // Match the username (converted to lowercase)
+            },
+        },
+
+        // 2️⃣ All users who subscribe **to** this channel
+        {
+            $lookup: {
+                from: "subscriptions",            // In the export of subscription.model.js it was Subscription => subscriptions
+                localField: "_id",
+                foreignField: "channel",          // ei channel tar name koto gulo document ache...subscriber number
+                // THis is no. of subscriber of ChaiAurCode is 666k
+                as: "subscribers",
+            },
+        },
+
+        // 3️⃣ All channels that **this user** is subscribed to
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",       // ei subscriber tar name koto gulo document ache...subscriber kota channel
+                // subscribe koreche
+                // This is ChaiAurCode has subscribed to 10 channels
+                as: "subscribedTo",
+            },
+        },
+
+        // 4️⃣ Add computed fields
+        {
+            $addFields: {
+                subscribersCount: {
+                    $size: "$subscribers",        // $subscribers is now a field
+                },
+                channelsSubscribedToCount: {
+                    $size: "$subscribedTo",       // $subscribedTo is now a field
+                },
+                // Jokkhon we open any channel in YT it shows "subscribe"(if not done yet)
+                // otherwise shows "subscribed"...code for that
+                isSubscribed: {
+                    $cond: {
+                        // this "if" checks if me(the user) is in the "subscribers" list
+                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+                        then: true,
+                        else: false,
+                    },
+                },
+            },
+        },
+
+        // 5️⃣ Project only the fields we want to send back
+        {
+            $project: {
+                fullName: 1,
+                username: 1,
+                subscribersCount: 1,
+                channelsSubscribedToCount: 1,
+                isSubscribed: 1,
+                avatar: 1,
+                coverImage: 1,
+                email: 1,
+            },
+        },
+    ]);
+
+    if(!channel?.length){
+        throw new ApiError(400, "Channel doesn't exists")
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, channel[0], "User channel fetched successfully")
+    )
+});
+ 
+
 
 export {
     registerUser,
@@ -382,5 +470,6 @@ export {
     changeCurrentPassword,
     getCurrentUser,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserChannelProfile
 }
