@@ -4,6 +4,8 @@ import {User } from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose";
+
 
 /*
 const registerUser= asyncHandler( async (req, res)=>{
@@ -461,6 +463,64 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 });
  
 
+const getWatchHistory = asyncHandler(async(req, res)=>{
+    const user = await User.aggregate([
+        {
+            $match:{
+                _id: new mongoose.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup:{
+                from :"videos",//in user.model.js=> export const Video = mongoose.model("Video",videoSchema)
+                localField:"watchHistory",
+                foreignField: "_id",
+                pipeline:[
+                    {
+                        $lookup: {
+                            from: "user",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as:"owner",
+                            //we don't need to provide all fields of the user to the user.
+                            // .for that we are using a sub-pipeline 
+                            //sub-pipeline use na koreo kora jete pare baire pipeline likhe
+                            pipeline:[
+                                {
+                                    $project:{
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                },
+                                //all the data from look up is available as a array
+                                //frontend have to face little prblm if such array is given for that
+                                //this extra pipeline
+                                {
+                                    $addFields:{
+                                        //now in frontend it can be accessible by user dot(.) kore 
+                                        owner:{
+                                            $first: "$owner"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user[0].watchHistory,
+            "Watched history fetched successfully"
+        )
+    )
+})
 
 export {
     registerUser,
@@ -471,5 +531,6 @@ export {
     getCurrentUser,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserChannelProfile
+    getUserChannelProfile,
+    getWatchHistory
 }
