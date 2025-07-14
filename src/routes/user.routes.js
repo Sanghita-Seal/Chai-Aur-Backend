@@ -1,7 +1,19 @@
 import { Router } from "express";
-import { loginUser, logoutUser, refreshAccessToken, registerUser } from "../controllers/user.controller.js";
+import { changeCurrentPassword, 
+    getCurrentUser, 
+    getUserChannelProfile, 
+    getWatchHistory, 
+    loginUser, 
+    logoutUser, 
+    refreshAccessToken, 
+    registerUser, 
+    updateAccountDetails, 
+    updateUserAvatar, 
+    updateUserCoverImage 
+} from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js"
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verify } from "jsonwebtoken";
 
 const router= Router()
 
@@ -28,7 +40,33 @@ router.route("/login").post(loginUser)
 //secured routes
 router.route("/logout").post(verifyJWT, logoutUser)
 router.route("/refresh-token").post(refreshAccessToken)
+router.route("/change-password").post(verifyJWT,
+    changeCurrentPassword)
+router.route("/current-user").get(verifyJWT,
+    getCurrentUser
+)
+//patch is v.imp to remember
+//  otherwise all deails will be updated
+router.route("/update-account").patch(verifyJWT,
+    updateAccountDetails
+)
 
+router.route("/avatar").patch(verifyJWT, //middleware
+    upload.single("avatar"),//middleware
+    updateUserAvatar
+)
 
+router.route("/cover-image").patch(verifyJWT, 
+    upload.single("/coverImage"),//multer
+    updateUserCoverImage
+    )
+//as the below on is taken from params so..
+router.route("/c/:username").get(verifyJWT,
+    getUserChannelProfile
+)
+
+router.route("/history").get(verifyJWT,
+    getWatchHistory
+)
 export default router
  
