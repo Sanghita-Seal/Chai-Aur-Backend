@@ -57,7 +57,7 @@ router.route("/avatar").patch(verifyJWT, //middleware
 )
 
 router.route("/cover-image").patch(verifyJWT, 
-    upload.single("/coverImage"),//multer
+    upload.single("coverImage"),//multer
     updateUserCoverImage
     )
 //as the below on is taken from params so..
