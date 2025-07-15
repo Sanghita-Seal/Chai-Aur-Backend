@@ -184,8 +184,12 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            // $set: {
+            //     refreshToken: undefined
+            // }//this code could not delete the file
+            $unset: {
+                refreshToken: 1//it removes 
+                // the field from the document
             }
         },
         {
@@ -277,7 +281,7 @@ const changeCurrentPassword = asyncHandler(async(req, res)=>{
     }
 
     //set new Password
-    user.newPassword =newPassword
+    user.password =newPassword
     await user.save({validateBeforeSave: false})
 
     return res
@@ -470,11 +474,16 @@ const getWatchHistory = asyncHandler(async(req, res)=>{
                 _id: new mongoose.Types.ObjectId(req.user._id)
             }
         },
-        {
+        {   // ⚠️ IMPORTANT: Every $lookup stage must include an 'as' field.
+            // Missing 'as' causes a MongoServerError at runtime because MongoDB
+            // needs to know where to store the joined documents in the output.
+            // This error isn't caught by JavaScript—it only appears when the query runs.
+
             $lookup:{
                 from :"videos",//in user.model.js=> export const Video = mongoose.model("Video",videoSchema)
                 localField:"watchHistory",
                 foreignField: "_id",
+                as: "watchHistory",  //This was not there so it was throwing error 
                 pipeline:[
                     {
                         $lookup: {
