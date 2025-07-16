@@ -99,3 +99,17 @@ userSchema.methods.generateRefreshToken = function(){
 
 
 export const User = mongoose.model("User", userSchema)
+
+/**
+ * ✅ Summary of What This Mongoose User Model Does:
+ *
+ * | Feature                | What it Does                                                                  |
+ * |------------------------|-------------------------------------------------------------------------------|
+ * 🧱 Defines schema        | Structure of user data (username, email, password, avatar, etc.)              |
+ * 🔐 Password hashing      | Automatically hashes password before saving                                   |
+ * 🔑 Password compare      | Compares plain password with hashed password (used during login)              |
+ * 🪙 Access token          | Generates JWT with user details (short-lived, used for auth)                  |
+ * 🔄 Refresh token         | Generates JWT with only user ID (longer-lived, used to renew access tokens)   |
+ * 🎬 Watch history         | Stores array of Video references (ObjectId of "Video" model)                  |
+ * 🕒 Timestamps            | Automatically adds `createdAt` and `updatedAt` fields                         |
+ */

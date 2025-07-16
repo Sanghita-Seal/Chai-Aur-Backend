@@ -1,9 +1,9 @@
 import { v2 as cloudinary } from 'cloudinary';
 import fs from "fs" // node filesystem search and read documentation
-console.log("🧪 Checking Cloudinary env vars:");
-console.log("CLOUDINARY_CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME);
-console.log("CLOUDINARY_API_KEY:", process.env.CLOUDINARY_API_KEY);
-console.log("CLOUDINARY_API_SECRET:", process.env.CLOUDINARY_API_SECRET ? "Loaded ✅" : "Missing ❌");
+// console.log("🧪 Checking Cloudinary env vars:");
+// console.log("CLOUDINARY_CLOUD_NAME:", process.env.CLOUDINARY_CLOUD_NAME);
+// console.log("CLOUDINARY_API_KEY:", process.env.CLOUDINARY_API_KEY);
+// console.log("CLOUDINARY_API_SECRET:", process.env.CLOUDINARY_API_SECRET ? "Loaded ✅" : "Missing ❌");
 
 // Configuration
 cloudinary.config({ 

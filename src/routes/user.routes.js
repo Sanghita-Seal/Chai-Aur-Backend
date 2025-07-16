@@ -45,7 +45,7 @@ router.route("/current-user").get(verifyJWT,
     getCurrentUser
 )
 //patch is v.imp to remember
-//  otherwise all deails will be updated
+//  otherwise all details will be updated
 router.route("/update-account").patch(verifyJWT,
     updateAccountDetails
 )
