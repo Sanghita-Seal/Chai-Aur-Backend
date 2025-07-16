@@ -17,3 +17,5 @@ router.route("/toggle/v/:videoId").post(toggleVideoLike)
 router.route("/toggle/v/:commentId").post(toggleCommentLike)
 router.route("/toggle/v/:tweetId").post(toggleTweetLike)
 router.route("/videos").post(getLikedVideo)
+
+export default router;
