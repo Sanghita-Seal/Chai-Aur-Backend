@@ -26,60 +26,113 @@ const getAllVideos = asyncHandler(async (req, res) => {
          sortType="asc",
          userId 
     } = req.query
-    // 1️⃣ Create a base filter object
-    const filter = {};
-
-    // 2️⃣ Apply text search on title or description if query is provided
-    if (query) {
-        filter.$or = [
-            { title: { $regex: query, $options: "i" } },
-            { description: { $regex: query, $options: "i" } }
-        ];
-    }
-
-    // 3️⃣ Filter by userId if provide
-    if(userId && isValidObjectId(userId)){
-        filter.videoOwner = videoOwner
-    }
-
-    // 4️⃣ Setup sorting
-    const sortOptions = {};
-    sortOptions[sortBy] = sortType === "asc" ? 1 : -1;
-    /*If:sortBy = "createdAt", sortType = "asc"
-        Then:sortOptions = {
-            createdAt: 1
-        }*/
-
-    // 5️⃣ Pagination values
-    const skip = (parseInt(page)-1)*parseInt(limit)
-    const limitValue =parseInt(limit)
-
-    // 6️⃣ Get total count for pagination metadata
-    const totalVideos = await Video.countDocuments(filter)
-
-     // 7️⃣ Fetch videos with filter, sort, and pagination
-    const videos = await Video
-                            .find(filter)
-                            .sort(sortOptions)
-                            .skip(skip)
-                            .limit(limitValue)
-                            .populate("videoOwner", "username email" )// populate limited user info
+    try {
+        // 1️⃣ Create a base filter object
+        const filter = {};
     
-    return res
-        .status(200)
-        .json(
-             new ApiResponse(200,{
-                totalVideos,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalVideos/limitValue),
-                videos
-            }, "Videos sent successfully")
-        )
+        // 2️⃣ Apply text search on title or description if query is provided
+        if (query) {
+            filter.$or = [
+                { title: { $regex: query, $options: "i" } },
+                { description: { $regex: query, $options: "i" } }
+            ];
+        }
+    
+        // 3️⃣ Filter by userId if provide
+        if(userId && isValidObjectId(userId)){
+            filter.videoOwner = videoOwner
+        }
+    
+        // 4️⃣ Setup sorting
+        const sortOptions = {};
+        sortOptions[sortBy] = sortType === "asc" ? 1 : -1;
+        /*If:sortBy = "createdAt", sortType = "asc"
+            Then:sortOptions = {
+                createdAt: 1
+            }*/
+    
+        // 5️⃣ Pagination values
+        const skip = (parseInt(page)-1)*parseInt(limit)
+        const limitValue =parseInt(limit)
+    
+        // 6️⃣ Get total count for pagination metadata
+        const totalVideos = await Video.countDocuments(filter)
+    
+         // 7️⃣ Fetch videos with filter, sort, and pagination
+        const videos = await Video
+                                .find(filter)
+                                .sort(sortOptions)
+                                .skip(skip)
+                                .limit(limitValue)
+                                .populate("videoOwner", "username email" )// populate limited user info
+        
+        return res
+            .status(200)
+            .json(
+                 new ApiResponse(200,{
+                    totalVideos,
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(totalVideos/limitValue),
+                    videos
+                }, "Videos sent successfully")
+            )
+    } catch (error) {
+        throw new ApiError(500, "Failed to fetch Videos")
+    }
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
+    /*
+    1. Extract video data from req.body and uploaded file data from req.files.
+    2. Validate inputs (title, description, etc.).
+    3. Upload video to Cloudinary using your helper
+     uploadOnCloudinary() (for both video and optional thumbnail).
+    4. Create a new Video document using your Mongoose model.
+    5. Return a response using ApiResponse.
+    */
     const { title, description} = req.body
     // TODO: get video, upload to cloudinary, create video
+    try {
+        const videoFile = req.files?.video?.[0]
+        const thumbnailFile = req.files?.thumbnail?.[0]
+    
+        //1.Validate Input
+        if(!title || !description || !videoFile){
+            throw new ApiError(400, "Title, Description & videoFile is required!")
+        }
+    
+        //2. Upload video
+        const videoUploadResponse= await uploadOnCloudinary(videoFile.path, "video")
+        if(!videoUploadResponse?.url){
+            throw new ApiError(500, "Video upload failed")
+        }
+    
+        //3.Upload Thumbnail
+        const thumbnailUploadResponse= await uploadOnCloudinary(thumbnailFile.path, "video")
+        if(!thumbnailUploadResponse?.url){
+            throw new ApiError(500, "Thumbnail upload failed")
+        }
+    
+        //4. Upload on DB
+        const newVideo = await Video.create({
+            title,
+            description,
+            videoUrl: videoUploadResponse.url,
+            thumbnailUrl: thumbnailUploadResponse?.url || "" ,
+            owner: req.user._id
+        })
+    
+        return res.status(201).json(
+            new ApiResponse(201, "Video published Successfully")
+        );
+    } catch (error) {
+        new ApiResponse(
+            error.statusCode || 500,
+            null,
+            error.message || "Internal server error"
+        )
+    }
+
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
