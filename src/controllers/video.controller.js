@@ -136,8 +136,43 @@ const publishAVideo = asyncHandler(async (req, res) => {
 })
 
 const getVideoById = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
-    //TODO: get video by id
+    /*Steps:
+    1. Extract  videoId from req.params
+    2. Check if the videoId is exists
+    3.Use your Video model to find the video by Id
+    4. If not found  throw error
+    5.if found throw the video in a success ApiResponse
+    */
+
+try {
+        //1. Extract  videoId from req.params
+        const { videoId } = req.params
+    
+        //2. Check if the videoId is exists
+        if(!videoId){
+            throw new ApiError(400, "Video Id does not exist")
+        }
+    
+        //3. Use your Video model to find the video by Id
+        const video = await Video.findById(videoId)
+        
+        // 4. If not found  throw error
+        if(!video){
+            throw new ApiError(401, "Video not found")
+        }
+    
+        //5.if found throw the video in a success ApiResponse
+        return res.status(203).json(
+            new ApiResponse(203, video, "Video fetched successfully")
+        )
+      
+} catch (error) {
+    new ApiResponse(
+        error.statusCode || 502,
+        null,
+        error.message || " Unprecedented error in getVideoById"
+    )
+}
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
