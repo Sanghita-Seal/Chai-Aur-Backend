@@ -176,9 +176,65 @@ try {
 })
 
 const updateVideo = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
     //TODO: update video details like title, description, thumbnail
+    /* Steps
+    1. Find the existing video by id
+    2. If the vidoe not found then 404 error
+    3. CHeck if  a new video file is uploaded with the request
+    4. If a new video is uploaded , upload it on cloudinary
+    5. If upload fails or no url is returned throw error
+    6. If the old video exist on cloudinary, delete it using public_id
+    7. update the video document with the new videoUrl and videoPublicId.
+    8.Check for other fields like title and description in the request body and update them if provided.
+    9.Save the updated video back to the database.
+    10.Send a response with a 200 status and the updated video data.
+    */
+    const { videoId } = req.params
 
+    const existingVideo = await Video.findById(videoId)
+
+    if(!existingVideo) {
+        throw new ApiError(404, "Video not found")
+    }
+
+    const newVideoLocalPath = req.file?.path
+    let videoData ={}
+    if(newVideoLocalPath){
+         //upload it on cloudinary
+         const uploadedVideo = await uploadOnCloudinary(newVideoLocalPath, "video")
+        // 5. If upload fails or no url is returned throw error
+        if(!uploadedVideo || !uploadedVideo.url){
+            throw new ApiError(405, "Failed to upload on cloudinary")
+        }
+        // 6: If old video exists on Cloudinary, delete it
+        if(existingVideo.videoPublicId){
+            uploadOnCloudinary.uploader.destroy(existingVideo.videoPublicId, {
+                resource_type : "video"
+            })
+        }
+
+        videoData.videoUrl = uploadedVideo.url
+        videoData.videoPublicId = uploadedVideo.public_id
+
+        const {title, description}= req.body
+        if(title) videoData.title = title
+        if(description) videoData.description = description
+
+
+        const updatedVideo = Video.findByIdAndUpdate(
+            videoId,
+            {$set : videoData},
+            {new : true}
+        )
+
+        return res.status(206).json(
+            new ApiResponse(
+                206,
+                updatedVideo,
+                "Video updated successfully"
+            )
+        )
+    }
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
