@@ -5,6 +5,8 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
+import { v2 as cloudinary } from "cloudinary"
+
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -80,7 +82,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to fetch Videos")
     }
 })
-
+ 
 const publishAVideo = asyncHandler(async (req, res) => {
     /*
     1. Extract video data from req.body and uploaded file data from req.files.
@@ -90,50 +92,61 @@ const publishAVideo = asyncHandler(async (req, res) => {
     4. Create a new Video document using your Mongoose model.
     5. Return a response using ApiResponse.
     */
-    const { title, description} = req.body
-    // TODO: get video, upload to cloudinary, create video
-    try {
-        const videoFile = req.files?.videoFile?.[0]
-        const thumbnailFile = req.files?.thumbnailFile?.[0]
-    
-        //1.Validate Input
-        if(!title || !description || !videoFile){
-            throw new ApiError(400, "Title, Description & videoFile is required!")
-        }
-    
-        //2. Upload video
-        const videoUploadResponse= await uploadOnCloudinary(videoFile.path, "video")
-        if(!videoUploadResponse?.url){
-            throw new ApiError(500, "Video upload failed")
-        }
-    
-        //3.Upload Thumbnail
-        const thumbnailUploadResponse= await uploadOnCloudinary(thumbnailFile.path, "video")
-        if(!thumbnailUploadResponse?.url){
-            throw new ApiError(500, "Thumbnail upload failed")
-        }
-    
-        //4. Upload on DB
-        const newVideo = await Video.create({
-            title,
-            description,
-            videoUrl: videoUploadResponse.url,
-            thumbnailUrl: thumbnailUploadResponse?.url || "" ,
-            owner: req.user._id
-        })
-    
-        return res.status(201).json(
-            new ApiResponse(201,newVideo, "Video published Successfully")
-        );
-    } catch (error) {
-        return new ApiResponse(
-            error.statusCode || 500,
-            null,
-            error.message || "Internal server error"
-        )
+  try {
+    // Extract userId from the logged-in user
+    const userId = req.user._id;
+
+    // Extract form fields from the request body
+    const { title, description } = req.body;
+
+    // Get uploaded video and thumbnail from request
+    const videoFile = req.files?.video?.[0];
+    const thumbnailFile = req.files?.thumbnail?.[0];
+
+    // Check if video file is provided
+    if (!videoFile) {
+      throw new ApiError(400, "Video file is required");
     }
 
-})
+    // Upload video to Cloudinary
+    const videoUploadResponse = await uploadOnCloudinary(videoFile.path, "video");
+    if (!videoUploadResponse?.url) {
+      throw new ApiError(500, "Video upload failed");
+    }
+
+    // Optional thumbnail upload check
+    let thumbnailUrl = "";
+    if (thumbnailFile) {
+      const thumbnailUploadResponse = await uploadOnCloudinary(thumbnailFile.path, "image");
+      if (!thumbnailUploadResponse?.url) {
+        throw new ApiError(500, "Thumbnail upload failed");
+      }
+      thumbnailUrl = thumbnailUploadResponse.url;
+    }
+
+    // Create a new video document
+    const video = await Video.create({
+      title,
+      description,
+      owner: userId,
+      videoUrl: videoUploadResponse.url,
+      videoPublicId: videoUploadResponse.public_id,
+      thumbnailUrl,
+    });
+
+    // Respond with success
+    return res.status(201).json(
+      new ApiResponse(201, video, "Video published successfully")
+    );
+
+  } catch (error) {
+    // Handle errors gracefully
+    return res.status(error.statusCode || 500).json(
+      new ApiResponse(null, null, error.message || "Internal server error")
+    );
+  }
+});
+
 
 const getVideoById = asyncHandler(async (req, res) => {
     /*Steps:
@@ -208,7 +221,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     // Step 3: Handle new video upload
     if(newVideoFile){
          //upload it on cloudinary
-         const uploadedVideo = await uploadOnCloudinary(newVideoFile)
+         const uploadedVideo = await uploadOnCloudinary(newVideoFile.path,"video")
         // If upload fails or no url is returned throw error
         if(!uploadedVideo || !uploadedVideo.url){
             throw new ApiError(405, "Failed to upload on cloudinary")
@@ -289,7 +302,31 @@ const deleteVideo = asyncHandler(async (req, res) => {
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
-    const { videoId } = req.params
+
+    //get video from the DB by videoId
+     const { videoId } = req.params
+   
+    //Fetch the video from DB by videoId
+    const video = await Video.findById(videoId)
+    if(!video){
+        throw new ApiError(404, "Video not found")
+    }
+
+    //Toggle the publish status
+    video.isPublished = !video.isPublished
+
+    //save the updated video
+    await video.save()
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            video,
+            `Video has been ${video.isPublished ? "published" : "unpublished"} successfully`
+        )
+    )
+
+
 })
 
 export {
