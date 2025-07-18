@@ -256,7 +256,36 @@ const updateVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
     const { videoId } = req.params
-    //TODO: delete video
+   
+    //Fetch the video from DB by videoId
+    const video = await Video.findById(videoId)
+    if(!video){
+        throw new ApiError(404, "Video not found")
+    }
+
+    //Delete video from cloudinary
+    try {
+        await cloudinary.uploader.destroy(video.videoPublicId, 
+            {
+                resource_type: "video"
+                // NOTE: Cloudinary defaults to resource_type: "image".
+                // When deleting or uploading videos, explicitly set resource_type: "video"
+                // Otherwise, Cloudinary won't find the file (e.g., during deletion).
+            }
+        )
+    } catch (error) {
+        console.error("Error deleting video from cludinary", error)
+        throw new ApiError(500, "Failed to delete video from cloudinary")
+    }
+
+    //Delete the video document from the DB
+    await Video.findByIdAndDelete(videoId)
+
+
+    //Response to the client
+    return res.status(200).json(
+        new ApiResponse(200, null, "Video deleted successfully")
+    )
 })
 
 const togglePublishStatus = asyncHandler(async (req, res) => {
