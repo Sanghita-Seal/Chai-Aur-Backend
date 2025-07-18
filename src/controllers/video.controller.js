@@ -40,7 +40,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     
         // 3️⃣ Filter by userId if provide
         if(userId && isValidObjectId(userId)){
-            filter.videoOwner = videoOwner
+            filter.videoOwner = userId
         }
     
         // 4️⃣ Setup sorting
@@ -93,8 +93,8 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const { title, description} = req.body
     // TODO: get video, upload to cloudinary, create video
     try {
-        const videoFile = req.files?.video?.[0]
-        const thumbnailFile = req.files?.thumbnail?.[0]
+        const videoFile = req.files?.videoFile?.[0]
+        const thumbnailFile = req.files?.thumbnailFile?.[0]
     
         //1.Validate Input
         if(!title || !description || !videoFile){
@@ -123,10 +123,10 @@ const publishAVideo = asyncHandler(async (req, res) => {
         })
     
         return res.status(201).json(
-            new ApiResponse(201, "Video published Successfully")
+            new ApiResponse(201,newVideo, "Video published Successfully")
         );
     } catch (error) {
-        new ApiResponse(
+        return new ApiResponse(
             error.statusCode || 500,
             null,
             error.message || "Internal server error"
@@ -162,12 +162,12 @@ try {
         }
     
         //5.if found throw the video in a success ApiResponse
-        return res.status(203).json(
-            new ApiResponse(203, video, "Video fetched successfully")
+        return res.status(200).json(
+            new ApiResponse(200, video, "Video fetched successfully")
         )
       
 } catch (error) {
-    new ApiResponse(
+    return new ApiResponse(
         error.statusCode || 502,
         null,
         error.message || " Unprecedented error in getVideoById"
@@ -178,63 +178,80 @@ try {
 const updateVideo = asyncHandler(async (req, res) => {
     //TODO: update video details like title, description, thumbnail
     /* Steps
-    1. Find the existing video by id
-    2. If the vidoe not found then 404 error
-    3. CHeck if  a new video file is uploaded with the request
-    4. If a new video is uploaded , upload it on cloudinary
-    5. If upload fails or no url is returned throw error
-    6. If the old video exist on cloudinary, delete it using public_id
-    7. update the video document with the new videoUrl and videoPublicId.
-    8.Check for other fields like title and description in the request body and update them if provided.
-    9.Save the updated video back to the database.
-    10.Send a response with a 200 status and the updated video data.
+        1: Get new uploaded video if provided
+        2: Fetch existing video from DB
+        3: Handle new video upload
+                //upload it on cloudinary
+                // If upload fails or no url is returned throw error
+                // If old video exists on Cloudinary, delete it
+                //Store new video details to update
+        4: Update metadata if provided
+        5: If no update data was provided
+        6: Perform the update
+    .
     */
     const { videoId } = req.params
 
-    const existingVideo = await Video.findById(videoId)
 
+     // Step 1: Get new uploaded video if provided
+    const newVideoFile = req.files?.videoFile?.[0];
+
+
+    // Step 2: Fetch existing video from DB
+    const existingVideo = await Video.findById(videoId);
     if(!existingVideo) {
         throw new ApiError(404, "Video not found")
     }
-
-    const newVideoLocalPath = req.file?.path
-    let videoData ={}
-    if(newVideoLocalPath){
+    let videoData ={}//will store fields to update
+    
+    
+    // Step 3: Handle new video upload
+    if(newVideoFile){
          //upload it on cloudinary
-         const uploadedVideo = await uploadOnCloudinary(newVideoLocalPath, "video")
-        // 5. If upload fails or no url is returned throw error
+         const uploadedVideo = await uploadOnCloudinary(newVideoFile)
+        // If upload fails or no url is returned throw error
         if(!uploadedVideo || !uploadedVideo.url){
             throw new ApiError(405, "Failed to upload on cloudinary")
         }
-        // 6: If old video exists on Cloudinary, delete it
+        // If old video exists on Cloudinary, delete it
         if(existingVideo.videoPublicId){
-            uploadOnCloudinary.uploader.destroy(existingVideo.videoPublicId, {
+            await cloudinary.uploader.destroy(existingVideo.videoPublicId, {
                 resource_type : "video"
             })
         }
-
+        //Store new video details to update
         videoData.videoUrl = uploadedVideo.url
         videoData.videoPublicId = uploadedVideo.public_id
+     }
 
+
+    // Step 4: Update metadata if provided
         const {title, description}= req.body
         if(title) videoData.title = title
         if(description) videoData.description = description
 
 
-        const updatedVideo = Video.findByIdAndUpdate(
+    // Step 5: If no update data was provided
+    if (Object.keys(videoData).length === 0) {
+        throw new ApiError(400, "No update data provided");
+    }
+
+
+    // Step 6: Perform the update
+        const updatedVideo = await Video.findByIdAndUpdate(
             videoId,
             {$set : videoData},
             {new : true}
         )
 
-        return res.status(206).json(
+        return res.status(200).json(
             new ApiResponse(
-                206,
+                200,
                 updatedVideo,
                 "Video updated successfully"
             )
         )
-    }
+
 })
 
 const deleteVideo = asyncHandler(async (req, res) => {
