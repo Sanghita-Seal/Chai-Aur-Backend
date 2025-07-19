@@ -97,17 +97,18 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     // Extract form fields from the request body
-    const { title, description } = req.body;
 
+    const { title, description } = req.body;
     // Get uploaded video and thumbnail from request
-    const videoFile = req.files?.video?.[0];
+    console.log("Files:", req.files);
+    const videoFile = req.files?.videoFile?.[0];
     const thumbnailFile = req.files?.thumbnail?.[0];
 
     // Check if video file is provided
     if (!videoFile) {
       throw new ApiError(400, "Video file is required");
     }
-
+console.log(req.files)
     // Upload video to Cloudinary
     const videoUploadResponse = await uploadOnCloudinary(videoFile.path, "video");
     if (!videoUploadResponse?.url) {
@@ -125,18 +126,19 @@ const publishAVideo = asyncHandler(async (req, res) => {
     }
 
     // Create a new video document
-    const video = await Video.create({
+    const newVideo = await Video.create({
       title,
-      description,
-      owner: userId,
-      videoUrl: videoUploadResponse.url,
-      videoPublicId: videoUploadResponse.public_id,
-      thumbnailUrl,
+        description,
+        videoFile: videoUploadResponse.url,
+        thumbnail: thumbnailUrl,
+        duration: 0, // You can replace this with actual duration if calculated
+        owner: userId
     });
+    console.log("New Video:", newVideo);
 
     // Respond with success
     return res.status(201).json(
-      new ApiResponse(201, video, "Video published successfully")
+      new ApiResponse(201, newVideo, "Video published successfully")
     );
 
   } catch (error) {
