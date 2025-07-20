@@ -97,10 +97,9 @@ const publishAVideo = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     // Extract form fields from the request body
-
+    
     const { title, description } = req.body;
     // Get uploaded video and thumbnail from request
-    console.log("Files:", req.files);
     const videoFile = req.files?.videoFile?.[0];
     const thumbnailFile = req.files?.thumbnail?.[0];
 
@@ -114,6 +113,7 @@ console.log(req.files)
     if (!videoUploadResponse?.url) {
       throw new ApiError(500, "Video upload failed");
     }
+    //console.log("Video Upload Response:", videoUploadResponse);
 
     // Optional thumbnail upload check
     let thumbnailUrl = "";
@@ -130,11 +130,12 @@ console.log(req.files)
       title,
         description,
         videoFile: videoUploadResponse.url,
+         videoPublicId: videoUploadResponse.public_id,
         thumbnail: thumbnailUrl,
         duration: 0, // You can replace this with actual duration if calculated
         owner: userId
     });
-    console.log("New Video:", newVideo);
+   // console.log(newVideo.videoPublicId);
 
     // Respond with success
     return res.status(201).json(
@@ -277,10 +278,12 @@ const deleteVideo = asyncHandler(async (req, res) => {
     if(!video){
         throw new ApiError(404, "Video not found")
     }
+    const publicId = video.videoFile.split('/upload/')[1].split('.')[0];
+    console.log("Deleting from Cloudinary: ", publicId);
 
     //Delete video from cloudinary
     try {
-        await cloudinary.uploader.destroy(video.videoPublicId, 
+        await cloudinary.uploader.destroy(publicId, 
             {
                 resource_type: "video"
                 // NOTE: Cloudinary defaults to resource_type: "image".
