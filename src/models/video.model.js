@@ -6,7 +6,10 @@ const videoSchema= new Schema({
         type:String,//cloudinary url
         required: true
     },
-    videoPublicId: { type: String, required: true },
+    //videoPublicId field ta na thakle  //video delete korte parbe na
+    //video delete korte hole videoPublicId ta thakte hobe
+    //required: true hole toggleVideo error throw korbe
+    videoPublicId: { type: String, required: false },
     thumbnail:{
         type:String,//cloudinary url
         required: true
